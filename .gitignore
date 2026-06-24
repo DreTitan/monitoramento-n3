@@ -1,0 +1,20 @@
+# Ambiente
+.env
+.env.local
+*.env
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+
+# Docker
+.docker/
+
+# Logs
+*.log
