@@ -42,5 +42,5 @@ def require_role(*roles: UserRole):
 
 # Dependências pré-configuradas para roles
 require_admin = require_role(UserRole.ADMIN)
-require_eng_or_admin = require_role(UserRole.ADMIN, UserRole.ENGENHEIRO)
+require_eng_or_admin = require_role(UserRole.ADMIN, UserRole.ENGENHEIRO, UserRole.N3)
 require_n3_or_admin = require_role(UserRole.ADMIN, UserRole.N3)
