@@ -46,7 +46,6 @@ class ChangePasswordRequest(BaseModel):
 
 
 @router.post("/login", response_model=TokenResponse)
-@limiter_auth.limit("10/minute")
 async def login(
     request: LoginRequest,
     req: Request
