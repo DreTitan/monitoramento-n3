@@ -74,7 +74,8 @@ class SupabaseUserRepository(IUserRepository):
             totp_secret=data.get("totp_secret"),
             totp_enabled=data.get("totp_enabled", False),
             created_at=data.get("created_at"),
-            updated_at=data.get("updated_at")
+            updated_at=data.get("updated_at"),
+            senha_padrao=data.get("senha_padrao", True)
         )
 
     async def create(self, user: UserCreate) -> UserInDB:
@@ -170,6 +171,7 @@ class SupabaseUserRepository(IUserRepository):
         """Atualiza a senha do usuário"""
         update_data = {
             "password_hash": new_password_hash,
+            "senha_padrao": False,
             "updated_at": agora_local().isoformat()
         }
         result = self._request("PATCH", self._table_name, json=update_data, params={"id": f"eq.{user_id}"})
