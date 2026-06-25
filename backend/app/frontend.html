@@ -468,16 +468,39 @@
 
         function calcularSLA48h(dataCriacao) {
             const inicio = new Date(dataCriacao);
+            // Usar horário comercial: 9h às 18h
             let horasAcumuladas = 0;
             const prazo = new Date(inicio);
+
+            // Se começar fora do horário comercial, ajustar para 9h
+            const hora = prazo.getHours();
+            if (hora < 9) {
+                prazo.setHours(9, 0, 0, 0);
+            }
+
             while (horasAcumuladas < 48) {
                 const diaSemana = prazo.getDay();
+
+                // Pular fins de semana sem adicionar horas
                 if (diaSemana === 0 || diaSemana === 6) {
                     prazo.setDate(prazo.getDate() + 1);
+                    prazo.setHours(9, 0, 0, 0);
                     continue;
                 }
-                const horasRestantes = 48 - horasAcumuladas;
-                const horasParaAdicionar = Math.min(24, horasRestantes);
+
+                // Calcular horas até o fim do expediente (18h)
+                const horaAtual = prazo.getHours();
+                const horasAteFim = Math.max(0, 18 - horaAtual);
+                const horasNecessarias = 48 - horasAcumuladas;
+                const horasParaAdicionar = Math.min(horasAteFim, horasNecessarias);
+
+                if (horasParaAdicionar <= 0) {
+                    // Já passou das 18h, ir para o próximo dia útil
+                    prazo.setDate(prazo.getDate() + 1);
+                    prazo.setHours(9, 0, 0, 0);
+                    continue;
+                }
+
                 horasAcumuladas += horasParaAdicionar;
                 prazo.setHours(prazo.getHours() + horasParaAdicionar);
             }
