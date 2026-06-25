@@ -15,8 +15,8 @@ from app.infrastructure.auth.audit_logger import audit_logger
 
 router = APIRouter(prefix="/auth", tags=["Autenticação"])
 
-# Rate limiter para login - 5 tentativas por minuto
-limiter_auth = Limiter(key_func=get_remote_address, default_limits=["5/minute"])
+# Rate limiter para login - 10 tentativas por minuto
+limiter_auth = Limiter(key_func=get_remote_address, default_limits=["10/minute"])
 
 
 class LoginRequest(BaseModel):
@@ -46,7 +46,7 @@ class ChangePasswordRequest(BaseModel):
 
 
 @router.post("/login", response_model=TokenResponse)
-@limiter_auth.limit("5/minute")
+@limiter_auth.limit("10/minute")
 async def login(
     request: LoginRequest,
     req: Request

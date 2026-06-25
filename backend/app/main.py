@@ -13,8 +13,8 @@ from app.api.subchamados import router as subchamados_router
 from app.api.auth import router as auth_router
 from app.api.users import router as users_router
 
-# Rate limiter - 30 requisições por minuto por IP
-limiter = Limiter(key_func=get_remote_address, default_limits=["30/minute"])
+# Rate limiter - 60 requisições por minuto por IP
+limiter = Limiter(key_func=get_remote_address, default_limits=["60/minute"])
 
 app = FastAPI(
     title="Sistema de Monitoramento de Calibração",

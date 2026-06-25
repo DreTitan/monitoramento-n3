@@ -1,0 +1,179 @@
+================================================================================
+                    SCRIPT DE APRESENTAÇÃO
+              GOAir Monitoramento N3 - Engenharia
+================================================================================
+
+---
+
+"Bom dia/boa tarde, [Nome do CEO]. Hoje vou apresentar o sistema de
+monitoramento que desenvolvemos para gerenciar os sub-chamados de
+calibração do N3 de Engenharia."
+
+---
+
+[HARDSKILLS DEMONSTRADAS]
+=========================
+
+1. ARQUITETURA DE SOFTWARE
+---------------------------
+"Implementei uma arquitetura chamada Clean Architecture, que é um padrão
+utilizado por empresas como Spotify, Airbnb e Netflix. Essa arquitetura
+separa o código em camadas independentes:
+
+- CAMADA DE DOMÍNIO: Regras de negócio puras, sem dependências externas
+- CAMADA DE APLICAÇÃO: Casos de uso que orquestram a lógica
+- CAMADA DE INFRAESTRUTURA: Conexões com banco de dados e serviços externos
+- CAMADA DE API: Endpoints que recebem as requisições
+
+Isso garante que o sistema seja manutenível, testável e escalável."
+
+2. TECNOLOGIAS BACKEND
+----------------------
+"O backend foi desenvolvido com FastAPI, um framework Python de alta
+performance usado pelo Nubank, Microsoft e Uber. Escolhi FastAPI porque:
+
+- É 50x mais rápido que Django tradicional
+- Validação automática de dados com Pydantic
+- Documentação automática da API (Swagger)
+- Suporte nativo a async/await para alta并发
+
+O servidor roda em container Docker no Railway, uma plataforma de
+hospedagem que também é usada pelo TikTok, Spotify e NASA."
+
+3. BANCO DE DADOS
+-----------------
+"O banco de dados é o Supabase, uma plataforma open-source baseada no
+PostgreSQL (o mesmo usado pelo Instagram, Twitch e Spotify).
+
+- BACKUP AUTOMÁTICO: Dados são replicados em tempo real
+- ESCALABILIDADE: Suporta milhões de registros
+- SEGURANÇA: Certificação SOC2 e ISO 27001
+- STORAGE: Armazenamento de arquivos (PDFs, imagens de evidências)"
+
+4. AUTENTICAÇÃO E SEGURANÇA
+---------------------------
+"Implementei um sistema de autenticação JWT (JSON Web Tokens),
+mesma tecnologia usada pelo Google, Facebook e Amazon:
+
+- LOGIN COM TOKEN: Cada sessão gera tokens únicos com expiração
+- TOKEN DE ACESSO: Válido por 30 minutos
+- TOKEN DE REFRESH: Válido por 7 dias
+- SENHAS CRIPTOGRAFADAS: Hash bcrypt com salt único por usuário
+
+Além disso, implementei:
+- 2FA (Autenticação em Dois Fatores): Mesma tecnologia do Nubank
+- RATE LIMITING: Limite de 5 tentativas de login por minuto
+- HEADERS DE SEGURANÇA: Proteção contra XSS, clickjacking e sniffing
+- CORS RESTRITO: Apenas nossos domínios podem acessar a API
+- LOG DE AUDITORIA: Toda ação é registrada com IP e timestamp"
+
+5. DEVOPS E INFRAESTRUTURA
+--------------------------
+"O deploy é automatizado via GitHub + Railway:
+
+- CÓDIGO NO GITHUB: Versionamento com Git
+- CI/CD AUTOMÁTICO: A cada push, o Railway compila e deploya
+- DOCKER: Container isolado com todas as dependências
+- HTTPS: Certificado SSL automático
+- MONITORAMENTO: Logs e métricas em tempo real"
+
+6. FRONTEND
+-----------
+"O frontend é uma aplicação web moderna com:
+
+- HTML5 + CSS3 + JavaScript Vanilla (sem frameworks pesados)
+- DARK MODE: Interface escura para reduzir fadiga visual
+- RESPONSIVO: Funciona em desktop, tablet e mobile
+- MODAL: Interface limpa com janelas modais para ações
+
+Tecnologias similares são usadas pelo WhatsApp Web e Discord."
+
+---
+
+[SOFTSKILLS DEMONSTRADAS]
+=========================
+
+1. COMUNICAÇÃO TÉCNICA
+----------------------
+"Capacidade de traduzir requisitos técnicos em soluções de negócio,
+comunicando de forma clara tanto com equipes técnicas quanto com
+stakeholders não-técnicos."
+
+2. RESOLUÇÃO DE PROBLEMAS
+-------------------------
+"Identificação de problemas críticos (como segurança de dados),
+proposição de soluções robustas e implementação eficiente."
+
+3. PROATIVIDADE
+---------------
+"Antecipei necessidades como troca obrigatória de senha no primeiro
+acesso e sistema de auditoria para compliance."
+
+4. VISÃO DE NEGÓCIO
+-------------------
+"O sistema foi projetado considerando o fluxo real de trabalho do N3:
+- Acompanhamento de SLA de 48 horas úteis
+- Status visuais (aberto, em análise, resolvido)
+- Alertas de atrasos
+- Filtros por técnico e período"
+
+5. METODOLOGIA ÁGIL
+-------------------
+"Desenvolvimento iterativo com entregas frequentes, incorporação de
+feedback e melhoria contínua do produto."
+
+---
+
+[FUNCIONALIDADES DO SISTEMA]
+============================
+
+PARA O N3 DE ENGENHARIA:
+- ✅ Criar sub-chamados de calibração
+- ✅ Registrar análise técnica com evidências
+- ✅ Finalizar chamados
+- ✅ Acompanhar SLA em tempo real
+- ✅ Upload de arquivos (PDF, imagens, TXT)
+- ✅ Dashboard com estatísticas
+
+PARA GESTÃO:
+- ✅ Filtros por período, tipo e responsável
+- ✅ Relatório de chamados finalizados
+- ✅ Indicadores de desempenho (abertos, atrasados, resolvidos)
+- ✅ Auditoria completa de ações
+
+PARA SEGURANÇA:
+- ✅ Autenticação JWT
+- ✅ 2FA opcional
+- ✅ Logs de auditoria
+- ✅ Rate limiting contra ataques
+- ✅ Headers de proteção
+
+---
+
+[RESULTADOS ESPERADOS]
+======================
+
+1. REDUÇÃO DE CHAMADOS PERDIDOS: Sistema visual alerta sobre SLA
+2. MAIOR TRANSPARÊNCIA: Gestão vê status em tempo real
+3. TRACEABILIDADE: Auditoria completa de todas as ações
+4. SEGURANÇA DE DADOS: Proteção de nível enterprise
+5. ESCALABILIDADE: Suporta crescimento sem refazer arquitetura
+
+---
+
+[PRÓXIMOS PASSOS SUGERIDOS]
+===========================
+
+1. Implementar notificações por email
+2. Dashboard analítico com gráficos
+3. Integração com sistemas existentes
+4. App mobile (opcional)
+
+---
+
+"Obrigado pela atenção. Estou à disposição para demonstrar o sistema
+ao vivo e tirar quaisquer dúvidas."
+
+================================================================================
+                         FIM DO SCRIPT
+================================================================================
