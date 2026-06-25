@@ -4,6 +4,8 @@ Rotas de Autenticação
 from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException, Body, Request
 from pydantic import BaseModel, EmailStr
+from slowapi import Limiter
+from slowapi.util import get_remote_address
 
 from app.api.deps import get_current_user
 from app.application.use_cases.auth_use_cases import AuthUseCases
@@ -12,6 +14,9 @@ from app.infrastructure.auth.jwt_handler import TokenData
 from app.infrastructure.auth.audit_logger import audit_logger
 
 router = APIRouter(prefix="/auth", tags=["Autenticação"])
+
+# Rate limiter para login - 5 tentativas por minuto
+limiter_auth = Limiter(key_func=get_remote_address, default_limits=["5/minute"])
 
 
 class LoginRequest(BaseModel):
@@ -41,6 +46,7 @@ class ChangePasswordRequest(BaseModel):
 
 
 @router.post("/login", response_model=TokenResponse)
+@limiter_auth.limit("5/minute")
 async def login(
     request: LoginRequest,
     req: Request
