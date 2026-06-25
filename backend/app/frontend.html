@@ -235,6 +235,7 @@
             <div class="stat-card atrasados"><div class="stat-label">Em Atraso</div><div class="stat-value" id="stat-atrasados">-</div></div>
             <div class="stat-card abertos"><div class="stat-label">Abertos</div><div class="stat-value" id="stat-abertos">-</div></div>
             <div class="stat-card em-analise"><div class="stat-label">Em Análise</div><div class="stat-value" id="stat-analise">-</div></div>
+            <div class="stat-card" style="border-left: 4px solid var(--success);"><div class="stat-label">Finalizados</div><div class="stat-value" id="stat-finalizados">-</div></div>
         </div>
 
         <div class="tabs">
@@ -242,6 +243,7 @@
             <button class="tab" data-filter="aberto">Abertos</button>
             <button class="tab" data-filter="em_analise">Em Análise</button>
             <button class="tab" data-filter="atrasado">Atrasados</button>
+            <button class="tab" data-filter="resolvido">Finalizados</button>
         </div>
 
         <div style="margin-bottom: 20px;">
@@ -344,6 +346,7 @@
             <div class="modal-footer">
                 <button class="btn btn-danger btn-sm" onclick="deletarSubChamado()">Excluir</button>
                 <button class="btn btn-primary" onclick="abrirModalAnalise()">+ Análise</button>
+                <button class="btn btn-success" id="btn-finalizar" onclick="finalizarSubChamado()">✓ Finalizar</button>
                 <button class="btn btn-secondary" onclick="fecharModalVisualizar()">Fechar</button>
             </div>
         </div>
@@ -517,6 +520,7 @@
                 const stats = await response.json();
                 document.getElementById('stat-abertos').textContent = stats.aberto || 0;
                 document.getElementById('stat-analise').textContent = stats.em_analise || 0;
+                document.getElementById('stat-finalizados').textContent = stats.resolvido || 0;
                 document.getElementById('stat-total').textContent = Object.values(stats).reduce((a, b) => a + b, 0);
             } catch (error) {}
 
@@ -785,6 +789,29 @@
                 const response = await fetch(`${API_BASE}/subchamados/${subchamadoAtual.id}`, { method: 'DELETE' });
                 if (!response.ok) throw new Error('Erro ao excluir');
                 mostrarNotificacao('Sub-chamado excluído!', 'success');
+                fecharModalVisualizar();
+                carregarSubChamados();
+                carregarEstatisticas();
+            } catch (error) {
+                mostrarNotificacao(error.message, 'error');
+            }
+        }
+
+        async function finalizarSubChamado() {
+            if (!subchamadoAtual) return;
+            if (subchamadoAtual.status === 'resolvido') {
+                mostrarNotificacao('Este sub-chamado já está finalizado!', 'error');
+                return;
+            }
+            if (!confirm('Deseja marcar este sub-chamado como finalizado?')) return;
+            try {
+                const response = await fetch(`${API_BASE}/subchamados/${subchamadoAtual.id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ status: 'resolvido' })
+                });
+                if (!response.ok) throw new Error('Erro ao finalizar');
+                mostrarNotificacao('Sub-chamado finalizado!', 'success');
                 fecharModalVisualizar();
                 carregarSubChamados();
                 carregarEstatisticas();
