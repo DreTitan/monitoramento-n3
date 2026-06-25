@@ -5,9 +5,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
-from app.api.routes import router as api_router
-from app.api.routes.auth_routes import router as auth_router
-from app.api.routes.user_routes import router as user_router
+from app.api.subchamados import router as subchamados_router
+from app.api.auth import router as auth_router
+from app.api.users import router as users_router
 
 app = FastAPI(
     title="Sistema de Monitoramento de Calibração",
@@ -31,9 +31,9 @@ app.add_middleware(
 )
 
 # Incluir rotas da API
-app.include_router(api_router, prefix="/api/v1")
+app.include_router(subchamados_router, prefix="/api/v1")
 app.include_router(auth_router, prefix="/api/v1")
-app.include_router(user_router, prefix="/api/v1")
+app.include_router(users_router, prefix="/api/v1")
 
 
 @app.get("/health")
