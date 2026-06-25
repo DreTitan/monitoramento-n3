@@ -581,6 +581,7 @@
 
                 // Verificar se precisa trocar senha
                 if (data.user && data.user.senha_padrao) {
+                    showMainApp(); // Esconder tela de login
                     document.getElementById('modal-trocar-senha').classList.add('active');
                 } else {
                     showMainApp();
