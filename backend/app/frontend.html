@@ -813,6 +813,7 @@
                 const data = await response.json();
                 subchamados = data.items;
                 renderizarSubChamados();
+                carregarEstatisticas(); // Atualizar estatísticas após carregar sub-chamados
             } catch (error) {
                 mostrarNotificacao('Erro ao carregar sub-chamados.', 'error');
             }
