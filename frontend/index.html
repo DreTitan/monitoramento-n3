@@ -219,10 +219,83 @@
         .upload-progress { margin-top: 10px; }
 
         @media (max-width: 768px) { .form-row { grid-template-columns: 1fr; } .info-grid { grid-template-columns: 1fr 1fr; } .logo { font-size: 1.4rem; } }
+
+        /* Login styles */
+        #user-menu {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            z-index: 100;
+        }
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            background: var(--bg-card);
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        .user-name { font-weight: 500; }
+        .login-required {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: var(--bg-dark);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+        .login-box {
+            background: var(--bg-card);
+            padding: 40px;
+            border-radius: 16px;
+            border: 1px solid var(--border);
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+        .login-box .logo { font-size: 1.5rem; margin-bottom: 20px; }
+        #login-error { color: var(--danger); margin-top: 10px; font-size: 0.9rem; }
     </style>
 </head>
 <body>
-    <div class="container">
+    <!-- Login Screen -->
+    <div class="login-required" id="login-screen">
+        <div class="login-box">
+            <div class="logo"><span>G</span>OAir Monitoramento <span>N3</span> - Engenharia</div>
+            <form id="form-login" onsubmit="handleLogin(event)">
+                <div class="form-group">
+                    <label for="login-email">Email</label>
+                    <input type="email" id="login-email" required placeholder="seu@email.com">
+                </div>
+                <div class="form-group">
+                    <label for="login-password">Senha</label>
+                    <input type="password" id="login-password" required placeholder="Sua senha">
+                </div>
+                <div class="form-group" id="totp-group" style="display: none;">
+                    <label for="login-totp">Código 2FA</label>
+                    <input type="text" id="login-totp" placeholder="Código do app" maxlength="6">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 15px;">Entrar</button>
+                <div id="login-error"></div>
+            </form>
+        </div>
+    </div>
+
+    <!-- User Menu (shown when logged in) -->
+    <div id="user-menu" style="display: none;">
+        <div class="user-info">
+            <span id="user-name">-</span>
+            <span class="badge badge-aberto" id="user-role">-</span>
+            <button class="btn btn-secondary btn-sm" onclick="logout()">Sair</button>
+        </div>
+    </div>
+
+    <div class="container" id="main-container" style="display: none;">
         <header>
             <div class="logo"><span>G</span>OAir Monitoramento <span>N3</span> - Engenharia</div>
             <p class="subtitle">Sistema de registro e acompanhamento de sub-chamados</p>
@@ -403,9 +476,149 @@
             return { vencido: false, texto };
         }
 
+        // ============ AUTH ============
+        let authState = {
+            accessToken: localStorage.getItem('access_token'),
+            refreshToken: localStorage.getItem('refresh_token'),
+            user: JSON.parse(localStorage.getItem('user') || 'null'),
+            isAuthenticated: false
+        };
+
+        function checkAuth() {
+            if (authState.accessToken) {
+                authState.isAuthenticated = true;
+                showMainApp();
+            } else {
+                showLoginScreen();
+            }
+        }
+
+        function showLoginScreen() {
+            document.getElementById('login-screen').style.display = 'flex';
+            document.getElementById('user-menu').style.display = 'none';
+            document.getElementById('main-container').style.display = 'none';
+        }
+
+        function showMainApp() {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('user-menu').style.display = 'block';
+            document.getElementById('main-container').style.display = 'block';
+
+            // Update user info
+            if (authState.user) {
+                document.getElementById('user-name').textContent = authState.user.nome_completo || authState.user.email;
+                document.getElementById('user-role').textContent = authState.user.role.toUpperCase();
+            }
+        }
+
+        function saveAuthData(data) {
+            localStorage.setItem('access_token', data.access_token);
+            localStorage.setItem('refresh_token', data.refresh_token);
+            localStorage.setItem('user', JSON.stringify(data.user));
+            authState.accessToken = data.access_token;
+            authState.refreshToken = data.refresh_token;
+            authState.user = data.user;
+            authState.isAuthenticated = true;
+        }
+
+        function clearAuthData() {
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('refresh_token');
+            localStorage.removeItem('user');
+            authState = { accessToken: null, refreshToken: null, user: null, isAuthenticated: false };
+        }
+
+        async function handleLogin(event) {
+            event.preventDefault();
+            const email = document.getElementById('login-email').value.trim();
+            const password = document.getElementById('login-password').value;
+            const totpToken = document.getElementById('login-totp').value.trim();
+            document.getElementById('login-error').textContent = '';
+
+            try {
+                const response = await fetch(`${API_BASE}/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, totp_token: totpToken || undefined })
+                });
+
+                const data = await response.json();
+
+                if (!response.ok) {
+                    if (data.detail === 'Código 2FA obrigatório') {
+                        document.getElementById('totp-group').style.display = 'block';
+                        document.getElementById('login-error').textContent = 'Código 2FA necessário';
+                    } else {
+                        document.getElementById('login-error').textContent = data.detail || 'Erro no login';
+                    }
+                    return;
+                }
+
+                saveAuthData(data);
+                showMainApp();
+                carregarSubChamados();
+                carregarEstatisticas();
+                mostrarNotificacao('Login realizado com sucesso!', 'success');
+
+            } catch (error) {
+                document.getElementById('login-error').textContent = 'Erro de conexão';
+            }
+        }
+
+        async function logout() {
+            try {
+                await fetch(`${API_BASE}/auth/logout`, {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${authState.accessToken}`,
+                        'Content-Type': 'application/json'
+                    }
+                });
+            } catch (e) {}
+            clearAuthData();
+            showLoginScreen();
+        }
+
+        async function authenticatedFetch(url, options = {}) {
+            const headers = {
+                'Content-Type': 'application/json',
+                ...options.headers
+            };
+            if (authState.accessToken) {
+                headers['Authorization'] = `Bearer ${authState.accessToken}`;
+            }
+            let response = await fetch(url, { ...options, headers });
+            if (response.status === 401 && authState.refreshToken) {
+                const refreshed = await refreshToken();
+                if (refreshed) {
+                    headers['Authorization'] = `Bearer ${authState.accessToken}`;
+                    response = await fetch(url, { ...options, headers });
+                }
+            }
+            return response;
+        }
+
+        async function refreshToken() {
+            if (!authState.refreshToken) return false;
+            try {
+                const response = await fetch(`${API_BASE}/auth/refresh`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ refresh_token: authState.refreshToken })
+                });
+                if (!response.ok) return false;
+                const data = await response.json();
+                saveAuthData(data);
+                return true;
+            } catch (e) { return false; }
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
-            carregarSubChamados();
-            carregarEstatisticas();
+            checkAuth();
+            if (authState.isAuthenticated) {
+                carregarSubChamados();
+                carregarEstatisticas();
+            }
             document.querySelectorAll('.tab').forEach(tab => {
                 tab.addEventListener('click', () => {
                     document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
@@ -479,7 +692,7 @@
                 reader.onload = async () => {
                     try {
                         const base64 = reader.result.split(',')[1];
-                        const response = await fetch(`${API_BASE}/upload`, {
+                        const response = await authenticatedFetch(`${API_BASE}/upload`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({
@@ -503,7 +716,7 @@
 
         async function carregarSubChamados() {
             try {
-                const response = await fetch(`${API_BASE}/subchamados?limit=100`);
+                const response = await authenticatedFetch(`${API_BASE}/subchamados?limit=100`);
                 if (!response.ok) throw new Error('Erro ao carregar');
                 const data = await response.json();
                 subchamados = data.items;
@@ -515,7 +728,7 @@
 
         async function carregarEstatisticas() {
             try {
-                const response = await fetch(`${API_BASE}/estatisticas`);
+                const response = await authenticatedFetch(`${API_BASE}/estatisticas`);
                 if (!response.ok) throw new Error('Erro');
                 const stats = await response.json();
                 document.getElementById('stat-abertos').textContent = stats.aberto || 0;
@@ -633,7 +846,7 @@
                     criado_em: dataCriacao ? dataCriacao + ':00' : null
                 };
 
-                const response = await fetch(`${API_BASE}/subchamados`, {
+                const response = await authenticatedFetch(`${API_BASE}/subchamados`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(dados)
@@ -662,7 +875,7 @@
                     }
                     // Atualizar com as URLs das evidências
                     if (urls.length > 0) {
-                        await fetch(`${API_BASE}/subchamados/${subchamadoId}/analise`, {
+                        await authenticatedFetch(`${API_BASE}/subchamados/${subchamadoId}/analise`, {
                             method: 'POST',
                             headers: { 'Content-Type': 'application/json' },
                             body: JSON.stringify({ analise: 'Evidências anexadas.', imagens: urls })
@@ -766,7 +979,7 @@
                 // Combine com evidências existentes
                 const todasUrls = [...(subchamadoAtual?.imagens || []), ...urls];
 
-                const response = await fetch(`${API_BASE}/subchamados/${id}/analise`, {
+                const response = await authenticatedFetch(`${API_BASE}/subchamados/${id}/analise`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ analise, imagens: todasUrls })
@@ -786,7 +999,7 @@
             if (!subchamadoAtual) return;
             if (!confirm('Tem certeza que deseja excluir este sub-chamado?')) return;
             try {
-                const response = await fetch(`${API_BASE}/subchamados/${subchamadoAtual.id}`, { method: 'DELETE' });
+                const response = await authenticatedFetch(`${API_BASE}/subchamados/${subchamadoAtual.id}`, { method: 'DELETE' });
                 if (!response.ok) throw new Error('Erro ao excluir');
                 mostrarNotificacao('Sub-chamado excluído!', 'success');
                 fecharModalVisualizar();
@@ -805,7 +1018,7 @@
             }
             if (!confirm('Deseja marcar este sub-chamado como finalizado?')) return;
             try {
-                const response = await fetch(`${API_BASE}/subchamados/${subchamadoAtual.id}`, {
+                const response = await authenticatedFetch(`${API_BASE}/subchamados/${subchamadoAtual.id}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ status: 'resolvido' })

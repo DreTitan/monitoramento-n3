@@ -6,32 +6,40 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 
 from app.api.routes import router as api_router
+from app.api.routes.auth_routes import router as auth_router
+from app.api.routes.user_routes import router as user_router
 
 app = FastAPI(
     title="Sistema de Monitoramento de Calibração",
     description="API para registro e acompanhamento de sub-chamados de calibração",
-    version="1.0.0",
+    version="2.0.0",
     docs_url="/docs",
     redoc_url="/redoc"
 )
 
-# Configurar CORS
+# Configurar CORS restrito
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://monitoramento-n3-production.up.railway.app",
+        "http://localhost:8000",
+        "http://localhost:3000",
+    ],
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=["Authorization", "Content-Type"],
 )
 
 # Incluir rotas da API
 app.include_router(api_router, prefix="/api/v1")
+app.include_router(auth_router, prefix="/api/v1")
+app.include_router(user_router, prefix="/api/v1")
 
 
 @app.get("/health")
 async def health_check():
     """Health check endpoint"""
-    return {"status": "healthy", "version": "1.0.0"}
+    return {"status": "healthy", "version": "2.0.0"}
 
 
 # Servir o frontend estático

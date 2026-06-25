@@ -1,11 +1,14 @@
 """
 Rotas da API - Presentation Layer
-Endpoints REST para sub-chamados
+Endpoints REST para sub-chamados (PROTEGIDOS)
 """
 from datetime import datetime
 from typing import Optional, List
-from fastapi import APIRouter, HTTPException, Query, Body
+from fastapi import APIRouter, HTTPException, Query, Body, Depends, Request
 
+from app.api.deps import get_current_user, require_n3_or_admin, require_eng_or_admin
+from app.infrastructure.auth.jwt_handler import TokenData
+from app.infrastructure.auth.audit_logger import audit_logger
 from app.domain.entities.subchamado import (
     SubChamadoCreate, SubChamadoUpdate, SubChamadoResponse,
     StatusSubchamado, Prioridade, AnaliseCreate
@@ -21,27 +24,33 @@ use_cases = SubChamadoUseCases(repository)
 
 
 @router.post("/subchamados", response_model=SubChamadoResponse, status_code=201)
-async def criar_subchamado(request: dict):
-    """
-    Cria um novo sub-chamado de calibração.
-
-    - **cliente**: Nome do cliente
-    - **numero_serie**: Número de série do equipamento
-    - **hgid**: ID HealthGo do equipamento
-    - **data_fabricacao**: Data de fabricação (opcional)
-    - **quantidade_exames**: Quantidade de exames realizados (opcional)
-    - **go_premium**: Se o cliente tem Go Premium
-    - **descricao**: Descrição do problema
-    - **prioridade**: Prioridade (baixa, media, alta, critica)
-    - **criado_por**: Nome de quem está criando
-    """
+async def criar_subchamado(
+    request: dict,
+    req: Request,
+    current_user: TokenData = Depends(get_current_user)
+):
+    """Cria um novo sub-chamado de calibração."""
     try:
+        # Usa o nome do usuário logado (não mais necessário pegar do request)
         criado_por = request.pop("criado_por", None)
         if not criado_por:
-            raise HTTPException(status_code=400, detail="criado_por é obrigatório")
+            criado_por = current_user.email
 
         dados = SubChamadoCreate(**request)
-        return await use_cases.criar_subchamado(dados, criado_por)
+        result = await use_cases.criar_subchamado(dados, criado_por)
+
+        # Log de auditoria
+        audit_logger.log(
+            user_id=current_user.user_id,
+            user_email=current_user.email,
+            action="SUBCHAMADO_CREATE",
+            resource_type="subchamado",
+            resource_id=result.id,
+            details={"cliente": dados.cliente},
+            ip_address=req.client.host if req.client else None
+        )
+
+        return result
     except HTTPException:
         raise
     except Exception as e:
@@ -52,15 +61,10 @@ async def criar_subchamado(request: dict):
 async def listar_subchamados(
     skip: int = Query(0, ge=0),
     limit: int = Query(100, ge=1, le=500),
-    status: Optional[StatusSubchamado] = None
+    status: Optional[StatusSubchamado] = None,
+    current_user: TokenData = Depends(get_current_user)
 ):
-    """
-    Lista todos os sub-chamados com paginação.
-
-    - **skip**: Número de registros para pular
-    - **limit**: Limite de registros por página
-    - **status**: Filtrar por status (opcional)
-    """
+    """Lista todos os sub-chamados com paginação."""
     try:
         items, total = await use_cases.listar_subchamados(skip, limit, status)
         return {
@@ -76,13 +80,10 @@ async def listar_subchamados(
 
 @router.get("/subchamados/atrasados", response_model=List[SubChamadoResponse])
 async def listar_subchamados_atrasados(
-    data_referencia: Optional[datetime] = Query(None)
+    data_referencia: Optional[datetime] = Query(None),
+    current_user: TokenData = Depends(get_current_user)
 ):
-    """
-    Lista sub-chamados em atraso (SLA 48h úteis).
-
-    - **data_referencia**: Data de referência para verificar atrasos (opcional, padrão: agora)
-    """
+    """Lista sub-chamados em atraso (SLA 48h úteis)."""
     try:
         return await use_cases.listar_atrasados(data_referencia)
     except Exception as e:
@@ -90,7 +91,10 @@ async def listar_subchamados_atrasados(
 
 
 @router.get("/subchamados/{subchamado_id}", response_model=SubChamadoResponse)
-async def buscar_subchamado(subchamado_id: str):
+async def buscar_subchamado(
+    subchamado_id: str,
+    current_user: TokenData = Depends(get_current_user)
+):
     """Busca um sub-chamado pelo ID."""
     try:
         subchamado = await use_cases.buscar_subchamado(subchamado_id)
@@ -106,17 +110,27 @@ async def buscar_subchamado(subchamado_id: str):
 @router.put("/subchamados/{subchamado_id}", response_model=SubChamadoResponse)
 async def atualizar_subchamado(
     subchamado_id: str,
-    dados: SubChamadoUpdate
+    dados: SubChamadoUpdate,
+    req: Request,
+    current_user: TokenData = Depends(get_current_user)
 ):
-    """
-    Atualiza um sub-chamado existente.
-
-    Todos os campos são opcionais - apenas os fornecidos serão atualizados.
-    """
+    """Atualiza um sub-chamado existente."""
     try:
         subchamado = await use_cases.atualizar_subchamado(subchamado_id, dados)
         if not subchamado:
             raise HTTPException(status_code=404, detail="Sub-chamado não encontrado")
+
+        # Log de auditoria
+        audit_logger.log(
+            user_id=current_user.user_id,
+            user_email=current_user.email,
+            action="SUBCHAMADO_UPDATE",
+            resource_type="subchamado",
+            resource_id=subchamado_id,
+            details=dados.model_dump(exclude_unset=True),
+            ip_address=req.client.host if req.client else None
+        )
+
         return subchamado
     except HTTPException:
         raise
@@ -125,12 +139,26 @@ async def atualizar_subchamado(
 
 
 @router.delete("/subchamados/{subchamado_id}", status_code=204)
-async def deletar_subchamado(subchamado_id: str):
-    """Deleta um sub-chamado."""
+async def deletar_subchamado(
+    subchamado_id: str,
+    req: Request,
+    current_user: TokenData = Depends(require_n3_or_admin)
+):
+    """Deleta um sub-chamado (N3 e Admin apenas)."""
     try:
         deleted = await use_cases.deletar_subchamado(subchamado_id)
         if not deleted:
             raise HTTPException(status_code=404, detail="Sub-chamado não encontrado")
+
+        # Log de auditoria
+        audit_logger.log(
+            user_id=current_user.user_id,
+            user_email=current_user.email,
+            action="SUBCHAMADO_DELETE",
+            resource_type="subchamado",
+            resource_id=subchamado_id,
+            ip_address=req.client.host if req.client else None
+        )
     except HTTPException:
         raise
     except Exception as e:
@@ -141,14 +169,11 @@ async def deletar_subchamado(subchamado_id: str):
 async def adicionar_analise(
     subchamado_id: str,
     analise: str = Body(...),
-    imagens: Optional[List[str]] = Body(None)
+    imagens: Optional[List[str]] = Body(None),
+    req: Request = None,
+    current_user: TokenData = Depends(require_eng_or_admin)
 ):
-    """
-    Adiciona análise a um sub-chamado (engenharia).
-
-    - **analise**: Texto da análise da engenharia
-    - **imagens**: URLs das imagens anexadas (opcional)
-    """
+    """Adiciona análise a um sub-chamado (Engenharia e Admin apenas)."""
     try:
         subchamado = await use_cases.adicionar_analise(
             subchamado_id,
@@ -157,6 +182,19 @@ async def adicionar_analise(
         )
         if not subchamado:
             raise HTTPException(status_code=404, detail="Sub-chamado não encontrado")
+
+        # Log de auditoria
+        if req:
+            audit_logger.log(
+                user_id=current_user.user_id,
+                user_email=current_user.email,
+                action="SUBCHAMADO_ANALISE",
+                resource_type="subchamado",
+                resource_id=subchamado_id,
+                details={"analise_preview": analise[:100]},
+                ip_address=req.client.host if req.client else None
+            )
+
         return subchamado
     except HTTPException:
         raise
@@ -166,13 +204,10 @@ async def adicionar_analise(
 
 @router.get("/relatorio-diario", response_model=dict)
 async def gerar_relatorio_diario(
-    data: Optional[datetime] = Query(None)
+    data: Optional[datetime] = Query(None),
+    current_user: TokenData = Depends(get_current_user)
 ):
-    """
-    Gera relatório diário de sub-chamados atrasados.
-
-    - **data**: Data do relatório (opcional, padrão: hoje)
-    """
+    """Gera relatório diário de sub-chamados atrasados."""
     try:
         return await use_cases.gerar_relatorio_diario(data)
     except Exception as e:
@@ -180,7 +215,9 @@ async def gerar_relatorio_diario(
 
 
 @router.get("/estatisticas", response_model=dict)
-async def obter_estatisticas():
+async def obter_estatisticas(
+    current_user: TokenData = Depends(get_current_user)
+):
     """Obtém estatísticas dos sub-chamados por status."""
     try:
         return await use_cases.obter_estatisticas()
@@ -193,18 +230,13 @@ async def upload_evidencia(
     subchamado_id: str = Body(...),
     filename: str = Body(...),
     content_type: str = Body(...),
-    file_data: str = Body(...)  # Base64 encoded
+    file_data: str = Body(...),
+    current_user: TokenData = Depends(get_current_user)
 ):
-    """
-    Faz upload de uma evidência para o Supabase Storage.
-
-    - **subchamado_id**: ID do sub-chamado
-    - **filename**: Nome do arquivo
-    - **content_type**: Tipo MIME do arquivo
-    - **file_data**: Conteúdo do arquivo em Base64
-    """
+    """Faz upload de uma evidência para o Supabase Storage."""
     import base64
     import httpx
+    import uuid
     from app.config import settings
 
     try:
@@ -212,7 +244,6 @@ async def upload_evidencia(
         file_bytes = base64.b64decode(file_data)
 
         # Gera nome único para o arquivo
-        import uuid
         ext = filename.split('.')[-1] if '.' in filename else ''
         unique_name = f"{uuid.uuid4()}.{ext}"
         path = f"{subchamado_id}/{unique_name}"
