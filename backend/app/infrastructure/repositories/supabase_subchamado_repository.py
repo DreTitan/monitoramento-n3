@@ -71,7 +71,10 @@ class SupabaseSubChamadoRepository(ISubChamadoRepository):
         """Cria um novo sub-chamado"""
         agora = agora_local()
         id_gerado = str(uuid.uuid4())
-        prazo = calcular_prazo_sla(agora)
+
+        # Usa a data fornecida ou a atual
+        data_criacao = subchamado.criado_em if subchamado.criado_em else agora
+        prazo = calcular_prazo_sla(data_criacao)
 
         data = {
             "id": id_gerado,
@@ -85,7 +88,7 @@ class SupabaseSubChamadoRepository(ISubChamadoRepository):
             "prioridade": subchamado.prioridade.value if subchamado.prioridade else Prioridade.MEDIA.value,
             "status": StatusSubchamado.ABERTO.value,
             "criado_por": criado_por,
-            "criado_em": agora.isoformat(),
+            "criado_em": data_criacao.isoformat(),
             "atualizado_em": agora.isoformat(),
             "prazo_sla": prazo.isoformat(),
             "analise": None,

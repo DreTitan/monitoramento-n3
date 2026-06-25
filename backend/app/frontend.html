@@ -270,6 +270,7 @@
                             <option value="Gabriel Genari">Gabriel Genari (Engenharia)</option>
                         </select>
                     </div>
+                    <div class="form-group"><label for="data_criacao">Data/Hora de Criação (para importar de planilha)</label><input type="datetime-local" id="data_criacao"></div>
                     <div class="form-row">
                         <div class="form-group"><label for="cliente">Cliente *</label><input type="text" id="cliente" required placeholder="Nome do cliente"></div>
                         <div class="form-group"><label for="numero_serie">Número de Série *</label><input type="text" id="numero_serie" required placeholder="Ex: HG-2024-001"></div>
@@ -619,11 +620,13 @@
                 }
 
                 // Criar sub-chamado primeiro (sem evidências)
+                const dataCriacao = document.getElementById('data_criacao').value;
                 const dados = {
                     criado_por: criadoPor, cliente, numero_serie: numeroSerie, hgid,
                     data_fabricacao: dataFabricacao ? dataFabricacao + 'T00:00:00' : null,
                     quantidade_exames: quantidadeExames ? parseInt(quantidadeExames) : null,
-                    go_premium: goPremium, descricao, prioridade
+                    go_premium: goPremium, descricao, prioridade,
+                    criado_em: dataCriacao ? dataCriacao + ':00' : null
                 };
 
                 const response = await fetch(`${API_BASE}/subchamados`, {

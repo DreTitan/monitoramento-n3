@@ -39,7 +39,7 @@ class SubChamadoBase(BaseModel):
 
 class SubChamadoCreate(SubChamadoBase):
     """Schema para criação de SubChamado"""
-    pass
+    criado_em: Optional[datetime] = Field(None, description="Data/hora de criação (opcional, para importar de planilha)")
 
 
 class SubChamadoUpdate(BaseModel):
