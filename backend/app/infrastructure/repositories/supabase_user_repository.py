@@ -165,3 +165,12 @@ class SupabaseUserRepository(IUserRepository):
 
         result = self._request("PATCH", self._table_name, json=update_data, params={"id": f"eq.{user_id}"})
         return result is not None and len(result) > 0
+
+    async def update_password(self, user_id: str, new_password_hash: str) -> bool:
+        """Atualiza a senha do usuário"""
+        update_data = {
+            "password_hash": new_password_hash,
+            "updated_at": agora_local().isoformat()
+        }
+        result = self._request("PATCH", self._table_name, json=update_data, params={"id": f"eq.{user_id}"})
+        return result is not None and len(result) > 0

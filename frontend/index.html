@@ -295,6 +295,29 @@
         </div>
     </div>
 
+    <!-- Modal Trocar Senha -->
+    <div class="modal-overlay" id="modal-trocar-senha">
+        <div class="modal" style="max-width: 400px;">
+            <div class="modal-header">
+                <h2>Alterar Senha</h2>
+            </div>
+            <div class="modal-body">
+                <p style="color: var(--text-secondary); margin-bottom: 20px;">Você está usando a senha padrão. Crie uma nova senha pessoal.</p>
+                <div class="form-group">
+                    <label for="nova-senha">Nova Senha</label>
+                    <input type="password" id="nova-senha" required placeholder="Mínimo 8 caracteres">
+                </div>
+                <div class="form-group">
+                    <label for="confirmar-senha">Confirmar Nova Senha</label>
+                    <input type="password" id="confirmar-senha" required placeholder="Repita a nova senha">
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-primary" onclick="trocarSenha()">Salvar Nova Senha</button>
+            </div>
+        </div>
+    </div>
+
     <div class="container" id="main-container" style="display: none;">
         <header>
             <div class="logo"><span>G</span>OAir Monitoramento <span>N3</span> - Engenharia</div>
@@ -555,13 +578,58 @@
                 }
 
                 saveAuthData(data);
-                showMainApp();
-                carregarSubChamados();
-                carregarEstatisticas();
-                mostrarNotificacao('Login realizado com sucesso!', 'success');
+
+                // Verificar se precisa trocar senha
+                if (data.user && data.user.senha_padrao) {
+                    document.getElementById('modal-trocar-senha').classList.add('active');
+                } else {
+                    showMainApp();
+                    carregarSubChamados();
+                    carregarEstatisticas();
+                    mostrarNotificacao('Login realizado com sucesso!', 'success');
+                }
 
             } catch (error) {
                 document.getElementById('login-error').textContent = 'Erro de conexão';
+            }
+        }
+
+        async function trocarSenha() {
+            const novaSenha = document.getElementById('nova-senha').value;
+            const confirmarSenha = document.getElementById('confirmar-senha').value;
+
+            if (novaSenha.length < 8) {
+                alert('Nova senha deve ter pelo menos 8 caracteres');
+                return;
+            }
+            if (novaSenha !== confirmarSenha) {
+                alert('As senhas não coincidem');
+                return;
+            }
+
+            try {
+                const response = await authenticatedFetch(`${API_BASE}/auth/change-password`, {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        senha_atual: document.getElementById('login-password').value,
+                        nova_senha: novaSenha
+                    })
+                });
+
+                if (response.ok) {
+                    document.getElementById('modal-trocar-senha').classList.remove('active');
+                    authState.user.senha_padrao = false;
+                    localStorage.setItem('user', JSON.stringify(authState.user));
+                    mostrarNotificacao('Senha alterada com sucesso!', 'success');
+                    showMainApp();
+                    carregarSubChamados();
+                    carregarEstatisticas();
+                } else {
+                    const data = await response.json();
+                    alert(data.detail || 'Erro ao trocar senha');
+                }
+            } catch (error) {
+                alert('Erro de conexão');
             }
         }
 

@@ -41,6 +41,7 @@ class UserResponse(UserBase):
     id: str
     is_active: bool
     totp_enabled: bool
+    senha_padrao: bool = True
     created_at: datetime
     updated_at: datetime
 

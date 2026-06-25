@@ -8,7 +8,7 @@ from app.domain.repositories.user_repository import IUserRepository
 from app.infrastructure.auth.jwt_handler import (
     create_access_token, create_refresh_token, verify_token, TokenPair
 )
-from app.infrastructure.auth.password_handler import verify_password
+from app.infrastructure.auth.password_handler import verify_password, hash_password
 from app.infrastructure.auth.totp_handler import (
     generate_totp_secret, get_totp_uri, verify_totp, generate_qr_code_base64
 )
@@ -59,6 +59,7 @@ class AuthUseCases:
             refresh_token=refresh_token
         )
 
+        # Verificar se é senha padrão (retorna flag para o frontend)
         return token_pair, user
 
     async def refresh_tokens(self, refresh_token: str) -> Tuple[TokenPair, UserInDB]:
@@ -119,4 +120,22 @@ class AuthUseCases:
             raise ValueError("Senha incorreta")
 
         await self._user_repo.update_totp(user_id, None, False)
+        return True
+
+    async def change_password(self, user_id: str, senha_atual: str, nova_senha: str) -> bool:
+        """Altera a senha do usuário"""
+        user = await self._user_repo.get_by_id(user_id)
+        if not user:
+            raise ValueError("Usuário não encontrado")
+
+        # Verificar senha atual
+        if not verify_password(senha_atual, user.password_hash):
+            raise ValueError("Senha atual incorreta")
+
+        # Validar nova senha
+        if len(nova_senha) < 8:
+            raise ValueError("Nova senha deve ter pelo menos 8 caracteres")
+
+        # Atualizar senha
+        await self._user_repo.update_password(user_id, hash_password(nova_senha))
         return True

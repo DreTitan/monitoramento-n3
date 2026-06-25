@@ -43,3 +43,8 @@ class IUserRepository(ABC):
     async def update_totp(self, user_id: str, secret: Optional[str], enabled: bool) -> bool:
         """Atualiza configurações de TOTP"""
         pass
+
+    @abstractmethod
+    async def update_password(self, user_id: str, new_password_hash: str) -> bool:
+        """Atualiza a senha do usuário"""
+        pass

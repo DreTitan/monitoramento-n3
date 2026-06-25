@@ -35,6 +35,11 @@ class Setup2FARequest(BaseModel):
     totp_token: str
 
 
+class ChangePasswordRequest(BaseModel):
+    senha_atual: str
+    nova_senha: str
+
+
 @router.post("/login", response_model=TokenResponse)
 async def login(
     request: LoginRequest,
@@ -61,6 +66,7 @@ async def login(
         )
 
         role_value = user.role.value if hasattr(user.role, 'value') else user.role
+        senha_padrao = getattr(user, 'senha_padrao', True)
 
         return TokenResponse(
             access_token=token_pair.access_token,
@@ -70,11 +76,11 @@ async def login(
                 "email": user.email,
                 "nome_completo": user.nome_completo,
                 "role": role_value,
-                "totp_enabled": user.totp_enabled
+                "totp_enabled": user.totp_enabled,
+                "senha_padrao": senha_padrao
             }
         )
     except ValueError as e:
-        # Log de tentativa falha
         audit_logger.log(
             user_id=None,
             user_email=request.email,
@@ -91,7 +97,7 @@ async def logout(
     req: Request,
     current_user: TokenData = Depends(get_current_user)
 ):
-    """Logout do usuário (cliente deve descartar tokens)"""
+    """Logout do usuário"""
     audit_logger.log(
         user_id=current_user.user_id,
         user_email=current_user.email,
@@ -110,9 +116,7 @@ async def refresh_token(request: RefreshRequest):
 
     try:
         token_pair, user = await use_cases.refresh_tokens(request.refresh_token)
-
         role_value = user.role.value if hasattr(user.role, 'value') else user.role
-
         return TokenResponse(
             access_token=token_pair.access_token,
             refresh_token=token_pair.refresh_token,
@@ -122,8 +126,35 @@ async def refresh_token(request: RefreshRequest):
                 "role": role_value
             }
         )
-    except Exception as e:
+    except Exception:
         raise HTTPException(status_code=401, detail="Token de refresh inválido")
+
+
+@router.post("/change-password")
+async def change_password(
+    request: ChangePasswordRequest,
+    current_user: TokenData = Depends(get_current_user)
+):
+    """Altera a senha do usuário"""
+    user_repo = SupabaseUserRepository()
+    use_cases = AuthUseCases(user_repo)
+
+    try:
+        success = await use_cases.change_password(
+            user_id=current_user.user_id,
+            senha_atual=request.senha_atual,
+            nova_senha=request.nova_senha
+        )
+        if success:
+            audit_logger.log(
+                user_id=current_user.user_id,
+                user_email=current_user.email,
+                action="PASSWORD_CHANGE",
+                ip_address=None
+            )
+        return {"message": "Senha alterada com sucesso"}
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
 
 
 @router.post("/2fa/setup")
