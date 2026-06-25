@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GOAir Monitoramento N3 - Engenharia</title>
+    <style>
+        :root {
+            --primary: #3b82f6;
+            --primary-dark: #2563eb;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --bg-dark: #0f172a;
+            --bg-card: #1e293b;
+            --bg-input: #334155;
+            --text-primary: #f8fafc;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border: #334155;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--bg-dark);
+            color: var(--text-primary);
+            line-height: 1.5;
+            min-height: 100vh;
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+
+        header {
+            background: var(--bg-card);
+            padding: 20px 30px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            margin-bottom: 30px;
+            border-radius: 12px;
+            border: 1px solid var(--border);
+        }
+
+        .logo { font-size: 1.8rem; font-weight: 700; margin-bottom: 5px; }
+        .logo span { color: #ef4444; }
+        .subtitle { color: var(--text-secondary); font-size: 0.9rem; }
+
+        .stats-bar { display: flex; gap: 15px; margin-bottom: 25px; flex-wrap: wrap; }
+
+        .stat-card {
+            background: var(--bg-card);
+            padding: 15px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            min-width: 150px;
+            border: 1px solid var(--border);
+            flex: 1;
+        }
+
+        .stat-card.atrasados { border-left: 4px solid var(--danger); }
+        .stat-card.abertos { border-left: 4px solid var(--warning); }
+        .stat-card.em-analise { border-left: 4px solid var(--primary); }
+
+        .stat-label { font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px; }
+        .stat-value { font-size: 2.2rem; font-weight: 700; color: var(--text-primary); }
+
+        .tabs { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+
+        .tab {
+            padding: 10px 20px;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            color: var(--text-secondary);
+            transition: all 0.2s;
+        }
+
+        .tab:hover { background: var(--bg-input); color: var(--text-primary); }
+        .tab.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            font-weight: 500;
+            transition: all 0.2s;
+        }
+
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-secondary { background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border); }
+        .btn-sm { padding: 5px 12px; font-size: 0.8rem; }
+
+        .card {
+            background: var(--bg-card);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            padding: 20px;
+            margin-bottom: 15px;
+            border: 1px solid var(--border);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .card:hover { transform: translateY(-2px); box-shadow: 0 8px 12px rgba(0,0,0,0.3); }
+
+        .card-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 15px; }
+        .card-title { font-size: 1.1rem; font-weight: 600; color: var(--text-primary); }
+        .card-subtitle { font-size: 0.85rem; color: var(--text-muted); }
+
+        .badge { padding: 4px 12px; border-radius: 20px; font-size: 0.75rem; font-weight: 600; text-transform: uppercase; }
+        .badge-aberto { background: rgba(245, 158, 11, 0.2); color: #fbbf24; border: 1px solid #fbbf24; }
+        .badge-em_analise { background: rgba(59, 130, 246, 0.2); color: #60a5fa; border: 1px solid #60a5fa; }
+        .badge-resolvido { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid #34d399; }
+        .badge-atrasado { background: rgba(239, 68, 68, 0.2); color: #f87171; border: 1px solid #f87171; }
+
+        .info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 15px; margin-bottom: 15px; }
+        .info-item { display: flex; flex-direction: column; }
+        .info-label { font-size: 0.7rem; color: var(--text-muted); text-transform: uppercase; margin-bottom: 2px; letter-spacing: 0.5px; }
+        .info-value { font-size: 0.95rem; color: var(--text-primary); }
+
+        .descricao { background: var(--bg-input); padding: 12px; border-radius: 8px; margin-top: 10px; font-size: 0.9rem; border: 1px solid var(--border); }
+        .analise-section { margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--border); }
+        .analise-title { font-size: 0.9rem; font-weight: 600; margin-bottom: 8px; color: var(--primary); }
+        .analise-text { font-size: 0.9rem; color: var(--text-secondary); }
+
+        .sla-info {
+            display: flex; align-items: center; gap: 8px; margin-top: 10px; padding: 10px 12px;
+            background: var(--bg-input); border-radius: 8px; font-size: 0.85rem; border: 1px solid var(--border);
+        }
+        .sla-info.vencido { background: rgba(239, 68, 68, 0.15); color: #f87171; border-color: #f87171; }
+        .sla-info.ok { background: rgba(16, 185, 129, 0.15); color: #34d399; border-color: #34d399; }
+        .sla-timer { font-weight: 700; margin-left: auto; }
+
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+        .modal-overlay.active { display: flex; }
+
+        .modal {
+            background: var(--bg-card);
+            border-radius: 16px;
+            max-width: 650px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            border: 1px solid var(--border);
+            box-shadow: 0 25px 50px rgba(0,0,0,0.5);
+        }
+
+        .modal-header { padding: 20px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+        .modal-header h2 { font-size: 1.3rem; color: var(--text-primary); }
+        .modal-close { background: none; border: none; font-size: 1.5rem; cursor: pointer; color: var(--text-muted); }
+        .modal-close:hover { color: var(--text-primary); }
+        .modal-body { padding: 20px; }
+
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 0.85rem; font-weight: 500; margin-bottom: 6px; color: var(--text-secondary); }
+        .form-group input, .form-group select, .form-group textarea {
+            width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 8px;
+            font-size: 0.95rem; background: var(--bg-input); color: var(--text-primary);
+        }
+        .form-group textarea { min-height: 100px; resize: vertical; }
+        .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+            outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+        }
+
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .checkbox-group { display: flex; align-items: center; gap: 10px; }
+        .checkbox-group input[type="checkbox"] { width: 20px; height: 20px; accent-color: var(--primary); }
+
+        .file-upload-area {
+            border: 2px dashed var(--border); border-radius: 12px; padding: 30px; text-align: center;
+            cursor: pointer; transition: all 0.2s; background: var(--bg-input);
+        }
+        .file-upload-area:hover { border-color: var(--primary); background: rgba(59, 130, 246, 0.1); }
+        .file-upload-area.dragover { border-color: var(--primary); background: rgba(59, 130, 246, 0.2); }
+        .file-upload-icon { font-size: 2rem; margin-bottom: 10px; }
+        .file-upload-text { color: var(--text-secondary); font-size: 0.9rem; }
+        .file-upload-text span { color: var(--primary); font-weight: 500; }
+
+        .file-list { margin-top: 15px; }
+        .file-item {
+            display: flex; align-items: center; justify-content: space-between; padding: 10px 15px;
+            background: var(--bg-input); border-radius: 8px; margin-bottom: 8px; border: 1px solid var(--border);
+        }
+        .file-item-info { display: flex; align-items: center; gap: 10px; }
+        .file-item-icon { font-size: 1.2rem; }
+        .file-item-name { font-size: 0.9rem; color: var(--text-primary); }
+        .file-item-size { font-size: 0.75rem; color: var(--text-muted); }
+        .file-item-remove { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 1.2rem; }
+        .file-item-remove:hover { color: #ff6b6b; }
+
+        .modal-footer { padding: 15px 20px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
+        .empty-state { text-align: center; padding: 60px 20px; color: var(--text-muted); }
+        .empty-state h3 { font-size: 1.2rem; margin-bottom: 10px; color: var(--text-secondary); }
+        .loading { display: flex; justify-content: center; padding: 40px; }
+        .spinner { width: 40px; height: 40px; border: 4px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        .notification {
+            position: fixed; bottom: 20px; right: 20px; padding: 15px 20px; border-radius: 12px;
+            color: white; font-weight: 500; z-index: 2000; transform: translateY(100px); opacity: 0;
+            transition: all 0.3s; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+        .notification.show { transform: translateY(0); opacity: 1; }
+        .notification.success { background: var(--success); }
+        .notification.error { background: var(--danger); }
+
+        .evidencias-preview { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+        .evidencia-thumb { width: 80px; height: 80px; object-fit: cover; border-radius: 8px; border: 1px solid var(--border); cursor: pointer; }
+        .evidencia-file { width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; background: var(--bg-input); border-radius: 8px; border: 1px solid var(--border); font-size: 0.7rem; color: var(--text-muted); text-align: center; cursor: pointer; }
+
+        .data-hora-local { font-size: 0.8rem; color: var(--text-muted); text-align: center; margin-bottom: 20px; padding: 10px; background: var(--bg-card); border-radius: 8px; border: 1px solid var(--border); }
+        .upload-progress { margin-top: 10px; }
+
+        @media (max-width: 768px) { .form-row { grid-template-columns: 1fr; } .info-grid { grid-template-columns: 1fr 1fr; } .logo { font-size: 1.4rem; } }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="logo"><span>G</span>OAir Monitoramento <span>N3</span> - Engenharia</div>
+            <p class="subtitle">Sistema de registro e acompanhamento de sub-chamados</p>
+        </header>
+
+        <div class="data-hora-local" id="data-hora-local"></div>
+
+        <div class="stats-bar">
+            <div class="stat-card"><div class="stat-label">Total</div><div class="stat-value" id="stat-total">-</div></div>
+            <div class="stat-card atrasados"><div class="stat-label">Em Atraso</div><div class="stat-value" id="stat-atrasados">-</div></div>
+            <div class="stat-card abertos"><div class="stat-label">Abertos</div><div class="stat-value" id="stat-abertos">-</div></div>
+            <div class="stat-card em-analise"><div class="stat-label">Em Análise</div><div class="stat-value" id="stat-analise">-</div></div>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" data-filter="todos">Todos</button>
+            <button class="tab" data-filter="aberto">Abertos</button>
+            <button class="tab" data-filter="em_analise">Em Análise</button>
+            <button class="tab" data-filter="atrasado">Atrasados</button>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+            <button class="btn btn-primary" onclick="abrirModalNovo()">+ Novo Sub-Chamado</button>
+        </div>
+
+        <div id="lista-subchamados"><div class="loading"><div class="spinner"></div></div></div>
+    </div>
+
+    <!-- Modal Novo -->
+    <div class="modal-overlay" id="modal-subchamado">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Novo Sub-Chamado</h2>
+                <button class="modal-close" onclick="fecharModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="form-subchamado">
+                    <div class="form-group"><label for="criado_por">Seu Nome *</label>
+                        <select id="criado_por" required>
+                            <option value="">Selecione...</option>
+                            <option value="André Souza">André Souza (N3)</option>
+                            <option value="Ane Pacheco">Ane Pacheco (N2)</option>
+                            <option value="Cristina Pacheco">Cristina Pacheco (N2)</option>
+                            <option value="Amós Nunes">Amós Nunes (Engenharia)</option>
+                            <option value="Gabriel Genari">Gabriel Genari (Engenharia)</option>
+                        </select>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label for="cliente">Cliente *</label><input type="text" id="cliente" required placeholder="Nome do cliente"></div>
+                        <div class="form-group"><label for="numero_serie">Número de Série *</label><input type="text" id="numero_serie" required placeholder="Ex: HG-2024-001"></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label for="hgid">HGID *</label><input type="text" id="hgid" required placeholder="ID do equipamento"></div>
+                        <div class="form-group"><label for="prioridade">Prioridade</label><select id="prioridade"><option value="baixa">Baixa</option><option value="media" selected>Média</option><option value="alta">Alta</option><option value="critica">Crítica</option></select></div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group"><label for="data_fabricacao">Data de Fabricação</label><input type="date" id="data_fabricacao"></div>
+                        <div class="form-group"><label for="quantidade_exames">Qtd. Exames</label><input type="number" id="quantidade_exames" min="0" placeholder="0"></div>
+                    </div>
+                    <div class="form-group checkbox-group"><input type="checkbox" id="go_premium"><label for="go_premium">Cliente Go Premium</label></div>
+                    <div class="form-group"><label for="descricao">Descrição *</label><textarea id="descricao" required placeholder="Descreva o problema..."></textarea></div>
+                    <div class="form-group">
+                        <label>Evidências (PNG, PDF, TXT)</label>
+                        <div class="file-upload-area" id="file-upload-area" onclick="document.getElementById('file-input').click()">
+                            <div class="file-upload-icon">📎</div>
+                            <div class="file-upload-text">Arraste arquivos aqui ou <span>clique para selecionar</span></div>
+                        </div>
+                        <input type="file" id="file-input" multiple accept=".png,.jpg,.jpeg,.pdf,.txt" style="display: none;" onchange="handleFileSelect(event)">
+                        <div class="file-list" id="file-list"></div>
+                        <div class="upload-progress" id="upload-progress"></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="fecharModal()">Cancelar</button>
+                <button class="btn btn-primary" id="btn-salvar" onclick="salvarSubChamado()">Salvar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Análise -->
+    <div class="modal-overlay" id="modal-analise">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Adicionar Análise</h2>
+                <button class="modal-close" onclick="fecharModalAnalise()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <form id="form-analise">
+                    <input type="hidden" id="analise-subchamado-id">
+                    <div class="form-group"><label for="analise-texto">Análise da Engenharia *</label><textarea id="analise-texto" required placeholder="Descreva a análise..."></textarea></div>
+                    <div class="form-group">
+                        <label>Evidências (PNG, PDF, TXT)</label>
+                        <div class="file-upload-area" id="file-upload-area-analise" onclick="document.getElementById('file-input-analise').click()">
+                            <div class="file-upload-icon">📎</div>
+                            <div class="file-upload-text">Arraste arquivos aqui ou <span>clique para selecionar</span></div>
+                        </div>
+                        <input type="file" id="file-input-analise" multiple accept=".png,.jpg,.jpeg,.pdf,.txt" style="display: none;" onchange="handleFileSelectAnalise(event)">
+                        <div class="file-list" id="file-list-analise"></div>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" onclick="fecharModalAnalise()">Cancelar</button>
+                <button class="btn btn-primary" onclick="salvarAnalise()">Salvar Análise</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Visualizar -->
+    <div class="modal-overlay" id="modal-visualizar">
+        <div class="modal">
+            <div class="modal-header">
+                <h2>Detalhes do Sub-Chamado</h2>
+                <button class="modal-close" onclick="fecharModalVisualizar()">&times;</button>
+            </div>
+            <div class="modal-body" id="visualizar-conteudo"></div>
+            <div class="modal-footer">
+                <button class="btn btn-danger btn-sm" onclick="deletarSubChamado()">Excluir</button>
+                <button class="btn btn-primary" onclick="abrirModalAnalise()">+ Análise</button>
+                <button class="btn btn-secondary" onclick="fecharModalVisualizar()">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="notification" id="notification"></div>
+
+    <script>
+        const API_BASE = 'https://monitoramento-n3-production.up.railway.app/api/v1';
+        let subchamados = [];
+        let subchamadoAtual = null;
+        let filtroAtual = 'todos';
+        let arquivosSelecionados = [];
+        let arquivosSelecionadosAnalise = [];
+
+        function atualizarDataHoraLocal() {
+            const agora = new Date();
+            const options = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit', second: '2-digit' };
+            document.getElementById('data-hora-local').textContent = agora.toLocaleDateString('pt-BR', options);
+        }
+        atualizarDataHoraLocal();
+        setInterval(atualizarDataHoraLocal, 1000);
+
+        function calcularSLA48h(dataCriacao) {
+            const inicio = new Date(dataCriacao);
+            let horasAcumuladas = 0;
+            const prazo = new Date(inicio);
+            while (horasAcumuladas < 48) {
+                const diaSemana = prazo.getDay();
+                if (diaSemana === 0 || diaSemana === 6) {
+                    prazo.setDate(prazo.getDate() + 1);
+                    continue;
+                }
+                const horasRestantes = 48 - horasAcumuladas;
+                const horasParaAdicionar = Math.min(24, horasRestantes);
+                horasAcumuladas += horasParaAdicionar;
+                prazo.setHours(prazo.getHours() + horasParaAdicionar);
+            }
+            return prazo;
+        }
+
+        function calcularTempoRestante(prazoSla) {
+            const agora = new Date();
+            const prazo = new Date(prazoSla);
+            const diff = prazo - agora;
+            if (diff <= 0) return { vencido: true, texto: 'SLA VENCIDO' };
+            const dias = Math.floor(diff / (1000 * 60 * 60 * 24));
+            const horas = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+            const minutos = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+            let texto = '';
+            if (dias > 0) texto += `${dias}d `;
+            if (horas > 0 || dias > 0) texto += `${horas}h `;
+            texto += `${minutos}m`;
+            return { vencido: false, texto };
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            carregarSubChamados();
+            carregarEstatisticas();
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.addEventListener('click', () => {
+                    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                    tab.classList.add('active');
+                    filtroAtual = tab.dataset.filter;
+                    renderizarSubChamados();
+                });
+            });
+            setupFileUpload();
+        });
+
+        function setupFileUpload() {
+            ['file-upload-area', 'file-upload-area-analise'].forEach(areaId => {
+                const area = document.getElementById(areaId);
+                if (!area) return;
+                area.addEventListener('dragover', (e) => { e.preventDefault(); area.classList.add('dragover'); });
+                area.addEventListener('dragleave', () => area.classList.remove('dragover'));
+                area.addEventListener('drop', (e) => {
+                    e.preventDefault();
+                    area.classList.remove('dragover');
+                    const files = e.dataTransfer.files;
+                    if (areaId === 'file-upload-area') handleFiles(files);
+                    else handleFilesAnalise(files);
+                });
+            });
+        }
+
+        function handleFileSelect(event) { handleFiles(event.target.files); }
+        function handleFileSelectAnalise(event) { handleFilesAnalise(event.target.files); }
+
+        function handleFiles(fileList) {
+            const validTypes = ['image/png', 'image/jpeg', 'application/pdf', 'text/plain'];
+            for (let file of fileList) {
+                if (validTypes.includes(file.type)) arquivosSelecionados.push(file);
+            }
+            renderFileList();
+        }
+
+        function handleFilesAnalise(fileList) {
+            const validTypes = ['image/png', 'image/jpeg', 'application/pdf', 'text/plain'];
+            for (let file of fileList) {
+                if (validTypes.includes(file.type)) arquivosSelecionadosAnalise.push(file);
+            }
+            renderFileListAnalise();
+        }
+
+        function removeFile(index) { arquivosSelecionados.splice(index, 1); renderFileList(); }
+        function removeFileAnalise(index) { arquivosSelecionadosAnalise.splice(index, 1); renderFileListAnalise(); }
+
+        function renderFileList() {
+            const container = document.getElementById('file-list');
+            container.innerHTML = arquivosSelecionados.map((file, index) => {
+                const icon = file.type.startsWith('image/') ? '🖼️' : file.type === 'application/pdf' ? '📄' : '📝';
+                const size = (file.size / 1024 / 1024).toFixed(2);
+                return `<div class="file-item"><div class="file-item-info"><span class="file-item-icon">${icon}</span><div><div class="file-item-name">${file.name}</div><div class="file-item-size">${size} MB</div></div></div><button class="file-item-remove" onclick="removeFile(${index})">&times;</button></div>`;
+            }).join('');
+        }
+
+        function renderFileListAnalise() {
+            const container = document.getElementById('file-list-analise');
+            container.innerHTML = arquivosSelecionadosAnalise.map((file, index) => {
+                const icon = file.type.startsWith('image/') ? '🖼️' : file.type === 'application/pdf' ? '📄' : '📝';
+                const size = (file.size / 1024 / 1024).toFixed(2);
+                return `<div class="file-item"><div class="file-item-info"><span class="file-item-icon">${icon}</span><div><div class="file-item-name">${file.name}</div><div class="file-item-size">${size} MB</div></div></div><button class="file-item-remove" onclick="removeFileAnalise(${index})">&times;</button></div>`;
+            }).join('');
+        }
+
+        async function uploadFile(file, subchamadoId) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = async () => {
+                    try {
+                        const base64 = reader.result.split(',')[1];
+                        const response = await fetch(`${API_BASE}/upload`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                                subchamado_id: subchamadoId,
+                                filename: file.name,
+                                content_type: file.type,
+                                file_data: base64
+                            })
+                        });
+                        if (!response.ok) throw new Error('Erro no upload');
+                        const result = await response.json();
+                        resolve(result.url);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                reader.onerror = reject;
+                reader.readAsDataURL(file);
+            });
+        }
+
+        async function carregarSubChamados() {
+            try {
+                const response = await fetch(`${API_BASE}/subchamados?limit=100`);
+                if (!response.ok) throw new Error('Erro ao carregar');
+                const data = await response.json();
+                subchamados = data.items;
+                renderizarSubChamados();
+            } catch (error) {
+                mostrarNotificacao('Erro ao carregar sub-chamados.', 'error');
+            }
+        }
+
+        async function carregarEstatisticas() {
+            try {
+                const response = await fetch(`${API_BASE}/estatisticas`);
+                if (!response.ok) throw new Error('Erro');
+                const stats = await response.json();
+                document.getElementById('stat-abertos').textContent = stats.aberto || 0;
+                document.getElementById('stat-analise').textContent = stats.em_analise || 0;
+                document.getElementById('stat-total').textContent = Object.values(stats).reduce((a, b) => a + b, 0);
+            } catch (error) {}
+
+            const agora = new Date();
+            let atrasados = 0;
+            subchamados.forEach(s => {
+                const prazo = calcularSLA48h(s.criado_em);
+                if (prazo < agora && ['aberto', 'em_analise'].includes(s.status)) atrasados++;
+            });
+            document.getElementById('stat-atrasados').textContent = atrasados;
+        }
+
+        function renderizarSubChamados() {
+            const container = document.getElementById('lista-subchamados');
+            let filtrados = subchamados;
+
+            if (filtroAtual === 'atrasado') {
+                const agora = new Date();
+                filtrados = subchamados.filter(s => {
+                    const prazo = calcularSLA48h(s.criado_em);
+                    return prazo < agora && ['aberto', 'em_analise'].includes(s.status);
+                });
+            } else if (filtroAtual !== 'todos') {
+                filtrados = subchamados.filter(s => s.status === filtroAtual);
+            }
+
+            if (filtrados.length === 0) {
+                container.innerHTML = `<div class="empty-state"><h3>Nenhum sub-chamado encontrado</h3><p>Clique em "+ Novo Sub-Chamado" para criar um registro.</p></div>`;
+                return;
+            }
+
+            container.innerHTML = filtrados.map(sc => {
+                const prazoSla = calcularSLA48h(sc.criado_em);
+                const agora = new Date();
+                const atrasado = prazoSla < agora && ['aberto', 'em_analise'].includes(sc.status);
+                const tempoRestante = calcularTempoRestante(prazoSla);
+                const statusClass = atrasado ? 'atrasado' : sc.status;
+                const statusLabel = atrasado ? 'Em Atraso' : formatarStatus(sc.status);
+
+                return `<div class="card" onclick="visualizarSubChamado('${sc.id}')">
+                    <div class="card-header">
+                        <div><div class="card-title">${sc.cliente}</div><div class="card-subtitle">SN: ${sc.numero_serie} | HGID: ${sc.hgid}</div></div>
+                        <span class="badge badge-${statusClass}">${statusLabel}</span>
+                    </div>
+                    <div class="info-grid">
+                        <div class="info-item"><span class="info-label">Criado por</span><span class="info-value">${sc.criado_por}</span></div>
+                        <div class="info-item"><span class="info-label">Criado em</span><span class="info-value">${formatarData(sc.criado_em)}</span></div>
+                        <div class="info-item"><span class="info-label">Prioridade</span><span class="info-value">${formatarPrioridade(sc.prioridade)}</span></div>
+                        <div class="info-item"><span class="info-label">SLA Vencimento</span><span class="info-value">${formatarData(prazoSla)}</span></div>
+                    </div>
+                    <div class="sla-info ${atrasado ? 'vencido' : 'ok'}">
+                        ${atrasado ? '⚠️' : '⏱️'} ${tempoRestante.texto}<span class="sla-timer">${atrasado ? 'ATRASADO' : 'Restante'}</span>
+                    </div>
+                </div>`;
+            }).join('');
+        }
+
+        function formatarStatus(status) {
+            const map = { 'aberto': 'Aberto', 'em_analise': 'Em Análise', 'aguardando_informacoes': 'Aguardando Info', 'resolvido': 'Resolvido', 'cancelado': 'Cancelado' };
+            return map[status] || status;
+        }
+
+        function formatarPrioridade(p) {
+            const map = { 'baixa': 'Baixa', 'media': 'Média', 'alta': 'Alta', 'critica': 'Crítica' };
+            return map[p] || p;
+        }
+
+        function formatarData(dataStr) {
+            if (!dataStr) return '-';
+            return new Date(dataStr).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+        }
+
+        function abrirModalNovo() {
+            arquivosSelecionados = [];
+            renderFileList();
+            document.getElementById('form-subchamado').reset();
+            document.getElementById('upload-progress').innerHTML = '';
+            document.getElementById('modal-subchamado').classList.add('active');
+        }
+
+        function fecharModal() { document.getElementById('modal-subchamado').classList.remove('active'); }
+
+        async function salvarSubChamado() {
+            const btn = document.getElementById('btn-salvar');
+            btn.disabled = true;
+            btn.textContent = 'Salvando...';
+
+            try {
+                const criadoPor = document.getElementById('criado_por').value.trim();
+                const cliente = document.getElementById('cliente').value.trim();
+                const numeroSerie = document.getElementById('numero_serie').value.trim();
+                const hgid = document.getElementById('hgid').value.trim();
+                const dataFabricacao = document.getElementById('data_fabricacao').value;
+                const quantidadeExames = document.getElementById('quantidade_exames').value;
+                const goPremium = document.getElementById('go_premium').checked;
+                const descricao = document.getElementById('descricao').value.trim();
+                const prioridade = document.getElementById('prioridade').value;
+
+                if (!criadoPor || !cliente || !numeroSerie || !hgid || !descricao) {
+                    throw new Error('Preencha todos os campos obrigatórios');
+                }
+
+                // Criar sub-chamado primeiro (sem evidências)
+                const dados = {
+                    criado_por: criadoPor, cliente, numero_serie: numeroSerie, hgid,
+                    data_fabricacao: dataFabricacao ? dataFabricacao + 'T00:00:00' : null,
+                    quantidade_exames: quantidadeExames ? parseInt(quantidadeExames) : null,
+                    go_premium: goPremium, descricao, prioridade
+                };
+
+                const response = await fetch(`${API_BASE}/subchamados`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(dados)
+                });
+
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'Erro ao salvar');
+                }
+
+                const subChamadoCriado = await response.json();
+                const subchamadoId = subChamadoCriado.id;
+
+                // Upload das evidências
+                if (arquivosSelecionados.length > 0) {
+                    document.getElementById('upload-progress').innerHTML = '<div style="color: var(--primary);">📤 Enviando evidências...</div>';
+                    const urls = [];
+                    for (let i = 0; i < arquivosSelecionados.length; i++) {
+                        try {
+                            const url = await uploadFile(arquivosSelecionados[i], subchamadoId);
+                            urls.push(url);
+                            document.getElementById('upload-progress').innerHTML = `<div style="color: var(--primary);">📤 Enviando ${i + 1}/${arquivosSelecionados.length}...</div>`;
+                        } catch (e) {
+                            console.error('Erro upload:', e);
+                        }
+                    }
+                    // Atualizar com as URLs das evidências
+                    if (urls.length > 0) {
+                        await fetch(`${API_BASE}/subchamados/${subchamadoId}/analise`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ analise: 'Evidências anexadas.', imagens: urls })
+                        });
+                    }
+                }
+
+                mostrarNotificacao('Sub-chamado criado com sucesso!', 'success');
+                fecharModal();
+                carregarSubChamados();
+                carregarEstatisticas();
+            } catch (error) {
+                mostrarNotificacao(error.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = 'Salvar';
+            }
+        }
+
+        function visualizarSubChamado(id) {
+            subchamadoAtual = subchamados.find(s => s.id === id);
+            if (!subchamadoAtual) return;
+
+            const prazoSla = calcularSLA48h(subchamadoAtual.criado_em);
+            const agora = new Date();
+            const atrasado = prazoSla < agora && ['aberto', 'em_analise'].includes(subchamadoAtual.status);
+            const tempoRestante = calcularTempoRestante(prazoSla);
+
+            let evidenciasHtml = '';
+            if (subchamadoAtual.imagens && subchamadoAtual.imagens.length > 0) {
+                evidenciasHtml = '<div class="analise-section"><div class="analise-title">📎 Evidências</div><div class="evidencias-preview">' +
+                    subchamadoAtual.imagens.map(img => {
+                        if (img.match(/\.(png|jpg|jpeg|gif)$/i)) {
+                            return `<img src="${img}" class="evidencia-thumb" onclick="window.open('${img}', '_blank')" title="Clique para abrir">`;
+                        } else {
+                            return `<div class="evidencia-file" onclick="window.open('${img}', '_blank')">${img.split('/').pop().substring(0, 10)}</div>`;
+                        }
+                    }).join('') + '</div></div>';
+            }
+
+            document.getElementById('visualizar-conteudo').innerHTML = `
+                <div style="padding: 0;">
+                    <div class="card-header">
+                        <div><div class="card-title">${subchamadoAtual.cliente}</div><div class="card-subtitle">Por ${subchamadoAtual.criado_por}</div></div>
+                        <span class="badge badge-${atrasado ? 'atrasado' : subchamadoAtual.status}">${atrasado ? 'Em Atraso' : formatarStatus(subchamadoAtual.status)}</span>
+                    </div>
+                    <div class="info-grid">
+                        <div class="info-item"><span class="info-label">Número de Série</span><span class="info-value">${subchamadoAtual.numero_serie}</span></div>
+                        <div class="info-item"><span class="info-label">HGID</span><span class="info-value">${subchamadoAtual.hgid}</span></div>
+                        <div class="info-item"><span class="info-label">Data Fabricação</span><span class="info-value">${subchamadoAtual.data_fabricacao ? formatarData(subchamadoAtual.data_fabricacao) : '-'}</span></div>
+                        <div class="info-item"><span class="info-label">Qtd. Exames</span><span class="info-value">${subchamadoAtual.quantidade_exames || '-'}</span></div>
+                        <div class="info-item"><span class="info-label">Go Premium</span><span class="info-value">${subchamadoAtual.go_premium ? '✓ Sim' : '✗ Não'}</span></div>
+                        <div class="info-item"><span class="info-label">Prioridade</span><span class="info-value">${formatarPrioridade(subchamadoAtual.prioridade)}</span></div>
+                        <div class="info-item"><span class="info-label">Criado em</span><span class="info-value">${formatarData(subchamadoAtual.criado_em)}</span></div>
+                        <div class="info-item"><span class="info-label">SLA Vence</span><span class="info-value">${formatarData(prazoSla)}</span></div>
+                    </div>
+                    <div class="descricao"><strong>Descrição:</strong><br>${subchamadoAtual.descricao}</div>
+                    ${subchamadoAtual.analise ? `<div class="analise-section"><div class="analise-title">📋 Análise</div><div class="analise-text">${subchamadoAtual.analise}</div></div>` : ''}
+                    ${evidenciasHtml}
+                    <div class="sla-info ${atrasado ? 'vencido' : 'ok'}" style="margin-top: 15px;">
+                        ${atrasado ? '⚠️' : '⏱️'} ${tempoRestante.texto}<span class="sla-timer">${atrasado ? 'ATRASADO' : 'Restante'}</span>
+                    </div>
+                </div>`;
+
+            document.getElementById('modal-visualizar').classList.add('active');
+        }
+
+        function fecharModalVisualizar() { document.getElementById('modal-visualizar').classList.remove('active'); subchamadoAtual = null; }
+
+        function abrirModalAnalise() {
+            if (!subchamadoAtual) return;
+            arquivosSelecionadosAnalise = [];
+            renderFileListAnalise();
+            document.getElementById('analise-subchamado-id').value = subchamadoAtual.id;
+            document.getElementById('analise-texto').value = subchamadoAtual.analise || '';
+            fecharModalVisualizar();
+            document.getElementById('modal-analise').classList.add('active');
+        }
+
+        function fecharModalAnalise() { document.getElementById('modal-analise').classList.remove('active'); }
+
+        async function salvarAnalise() {
+            const id = document.getElementById('analise-subchamado-id').value;
+            const analise = document.getElementById('analise-texto').value.trim();
+
+            if (!analise) { mostrarNotificacao('Preencha o campo de análise', 'error'); return; }
+
+            try {
+                // Upload evidências primeiro
+                let urls = [];
+                if (arquivosSelecionadosAnalise.length > 0) {
+                    urls = [];
+                    for (const file of arquivosSelecionadosAnalise) {
+                        try {
+                            const url = await uploadFile(file, id);
+                            urls.push(url);
+                        } catch (e) { console.error('Erro upload:', e); }
+                    }
+                }
+
+                // Combine com evidências existentes
+                const todasUrls = [...(subchamadoAtual?.imagens || []), ...urls];
+
+                const response = await fetch(`${API_BASE}/subchamados/${id}/analise`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ analise, imagens: todasUrls })
+                });
+
+                if (!response.ok) throw new Error('Erro ao salvar');
+                mostrarNotificacao('Análise salva com sucesso!', 'success');
+                fecharModalAnalise();
+                carregarSubChamados();
+                carregarEstatisticas();
+            } catch (error) {
+                mostrarNotificacao(error.message, 'error');
+            }
+        }
+
+        async function deletarSubChamado() {
+            if (!subchamadoAtual) return;
+            if (!confirm('Tem certeza que deseja excluir este sub-chamado?')) return;
+            try {
+                const response = await fetch(`${API_BASE}/subchamados/${subchamadoAtual.id}`, { method: 'DELETE' });
+                if (!response.ok) throw new Error('Erro ao excluir');
+                mostrarNotificacao('Sub-chamado excluído!', 'success');
+                fecharModalVisualizar();
+                carregarSubChamados();
+                carregarEstatisticas();
+            } catch (error) {
+                mostrarNotificacao(error.message, 'error');
+            }
+        }
+
+        function mostrarNotificacao(mensagem, tipo = 'success') {
+            const notification = document.getElementById('notification');
+            notification.textContent = mensagem;
+            notification.className = `notification ${tipo} show`;
+            setTimeout(() => notification.classList.remove('show'), 3000);
+        }
+
+        setInterval(() => { atualizarDataHoraLocal(); carregarSubChamados(); carregarEstatisticas(); }, 30000);
+    </script>
+</body>
+</html>
