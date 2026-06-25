@@ -76,6 +76,7 @@ async def login(
     except ValueError as e:
         # Log de tentativa falha
         audit_logger.log(
+            user_id=None,
             user_email=request.email,
             action="LOGIN_FAILED",
             details={"error": str(e)},
